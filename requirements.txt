@@ -1,0 +1,7 @@
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Mail==0.9.1
+twilio==8.10.0
+Werkzeug==3.0.1
+flask-socketio==5.3.3
+eventlet==0.33.0

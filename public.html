@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Public Aid Map — Donor → Beneficiary</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map { height: 80vh; width: 100%; margin: 0 auto; }
+    .popup-photo { max-width: 160px; height: auto; display:block; margin-top:6px; border-radius:6px; }
+    .legend { background: white; padding:8px; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Aid Distribution Map — Donor → Beneficiary</h2>
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Transactions injected by Flask
+    const transactions = {{ transactions | tojson }};
+    console.log("transactions", transactions);
+
+    // initialize map
+    const map = L.map('map').setView([20.0, 78.0], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Feature group to collect markers and polylines (for fitBounds)
+    const group = L.featureGroup().addTo(map);
+
+    // helper: safe parse float
+    function parseCoord(v) {
+      if (v === null || v === undefined || v === '') return null;
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    transactions.forEach(t => {
+      const toLat = parseCoord(t.lat);
+      const toLon = parseCoord(t.lon);
+      const fromLat = parseCoord(t.donor_lat);
+      const fromLon = parseCoord(t.donor_lon);
+
+      // Build popup content (common)
+      function popupHtml(type) {
+        let s = `<b>${type} — ${t.beneficiary_name || 'N/A'}</b><br>`;
+        s += `${t.item || ''}<br>Status: ${t.status || ''}`;
+        if (t.photo_filename) {
+          // photo served from /uploads/<filename>
+          s += `<br><img class="popup-photo" src="/uploads/${t.photo_filename}" alt="photo">`;
+        }
+        return s;
+      }
+
+      // Donor marker (green)
+      if (fromLat !== null && fromLon !== null) {
+        const donorMarker = L.circleMarker([fromLat, fromLon], {
+          radius: 6, color: 'green', fillColor: 'green', fillOpacity: 0.8
+        }).addTo(map);
+        donorMarker.bindPopup(popupHtml("Donor (From)"));
+        group.addLayer(donorMarker);
+      }
+
+      // Beneficiary (to) marker (blue)
+      if (toLat !== null && toLon !== null) {
+        const toMarker = L.circleMarker([toLat, toLon], {
+          radius: 6, color: '#1f77b4', fillColor: '#1f77b4', fillOpacity: 0.9
+        }).addTo(map);
+        toMarker.bindPopup(popupHtml("Beneficiary (To)"));
+        group.addLayer(toMarker);
+      }
+
+      // Draw polyline if both exist
+      if (fromLat !== null && fromLon !== null && toLat !== null && toLon !== null) {
+        const line = L.polyline([[fromLat, fromLon], [toLat, toLon]], {
+          color: 'purple',
+          weight: 2,
+          opacity: 0.6,
+          dashArray: '4 4'
+        }).addTo(map);
+        group.addLayer(line);
+      }
+    });
+
+    // If we added something, fit bounds; otherwise keep default view
+    if (group.getLayers().length > 0) {
+      map.fitBounds(group.getBounds(), { padding: [40, 40] });
+    }
+
+    // small legend
+    const legend = L.control({ position: 'topright' });
+    legend.onAdd = function () {
+      const div = L.DomUtil.create('div', 'legend');
+      div.innerHTML = `
+        <strong>Legend</strong><br>
+        <span style="display:inline-block;width:12px;height:12px;background:green;margin-right:6px;border-radius:50%"></span> Donor (From)<br>
+        <span style="display:inline-block;width:12px;height:12px;background:#1f77b4;margin-right:6px;border-radius:50%"></span> Beneficiary (To)<br>
+        <span style="display:inline-block;width:20px;height:2px;background:purple;display:inline-block;margin-right:6px;"></span> Route
+      `;
+      return div;
+    };
+    legend.addTo(map);
+  </script>
+</body>
+</html>

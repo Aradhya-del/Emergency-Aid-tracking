@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Audit Log</title>
+  <style>
+    body { font-family: Arial; margin: 40px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #aaa; padding: 8px; }
+  </style>
+</head>
+<body>
+  <h2>🧾 Audit Log</h2>
+  <table>
+    <tr><th>ID</th><th>Transaction ID</th><th>Action</th><th>Actor</th><th>Time</th></tr>
+    {% for l in logs %}
+    <tr>
+      <td>{{ l.id }}</td>
+      <td>{{ l.transaction_id }}</td>
+      <td>{{ l.action }}</td>
+      <td>{{ l.actor }}</td>
+      <td>{{ l.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p><a href="/dashboard">← Back to Dashboard</a></p>
+</body>
+</html>

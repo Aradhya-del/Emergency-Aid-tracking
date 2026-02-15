@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Track Delivery - Aid Tracking{% endblock %}
+
+{% block extra_css %}
+<style>
+    #map {
+        height: 400px;
+        width: 100%;
+        border-radius: 15px;
+        margin: 20px 0;
+    }
+    
+    .tracking-info {
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        margin: 10px 0;
+    }
+    
+    .status-pending { background-color: #ffc107; color: #000; }
+    .status-delivered { background-color: #28a745; color: #fff; }
+    .status-en-route { background-color: #17a2b8; color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tracking-container">
+    <h2>Track Delivery</h2>
+    
+    <div class="tracking-info">
+        <h4>{{ transaction.beneficiary_name }}</h4>
+        <p><strong>Item:</strong> {{ transaction.item }}</p>
+        <p><strong>Delivery Status:</strong> 
+            <span class="status-badge status-{{ transaction.delivery_status.lower() }}">
+                {{ transaction.delivery_status }}
+            </span>
+        </p>
+        <p><strong>Last Updated:</strong> 
+            {% if transaction.last_updated %}
+                {{ transaction.last_updated.strftime('%Y-%m-%d %H:%M:%S') }}
+            {% else %}
+                Not started
+            {% endif %}
+        </p>
+    </div>
+    
+    <div id="map"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let map, marker, routeLine;
+    const updateInterval = 30000; // Update every 30 seconds
+
+    function initMap() {
+        // Initialize map centered on delivery location
+        map = L.map('map').setView([{{ transaction.lat }}, {{ transaction.lon }}], 13);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Add markers for pickup and delivery locations
+        L.marker([{{ transaction.donor_lat }}, {{ transaction.donor_lon }}])
+            .bindPopup('Pickup Location')
+            .addTo(map);
+            
+        L.marker([{{ transaction.lat }}, {{ transaction.lon }}])
+            .bindPopup('Delivery Location')
+            .addTo(map);
+            
+        // Initialize current location marker
+        marker = L.marker([{{ transaction.current_lat or transaction.donor_lat }}, 
+                          {{ transaction.current_lon or transaction.donor_lon }}])
+            .bindPopup('Current Location')
+            .addTo(map);
+            
+        // Draw route
+        routeLine = L.polyline([], {color: 'blue'}).addTo(map);
+        
+        // Start tracking updates
+        updateLocation();
+        setInterval(updateLocation, updateInterval);
+    }
+    
+    function updateLocation() {
+        fetch(`/api/update_location/{{ transaction.id }}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update marker position
+                    marker.setLatLng([data.lat, data.lon]);
+                    
+                    // Add point to route line
+                    routeLine.addLatLng([data.lat, data.lon]);
+                    
+                    // Update last updated time
+                    document.querySelector('.last-updated').textContent = 
+                        new Date().toLocaleString();
+                }
+            })
+            .catch(error => console.error('Error updating location:', error));
+    }
+    
+    // Initialize map when page loads
+    window.addEventListener('load', initMap);
+</script>
+{% endblock %}
