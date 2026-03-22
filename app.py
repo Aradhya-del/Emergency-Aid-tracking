@@ -29,15 +29,15 @@ app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024  # 8MB
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'bmahendhar59@gmail.com'
+app.config['MAIL_USERNAME'] = 'user@gmail.com'
 app.config['MAIL_PASSWORD'] = 'YOUR_APP_PASSWORD'
 mail = Mail(app)
 
 # --- Twilio Config ---
-app.config['TWILIO_ACCOUNT_SID'] = 'AC600926e628bfb15031238b623b4e1ae7'
-app.config['TWILIO_AUTH_TOKEN'] = '9313988d78359cb1a192572c53523b4f'
+app.config['TWILIO_ACCOUNT_SID'] = 'YOUR_ACCOUNT_SID'
+app.config['TWILIO_AUTH_TOKEN'] = 'Y)UR_AUTH_TOKEN'
 app.config['TWILIO_FROM_NUMBER'] = '+12294598732'
-app.config['ADMIN_PHONE'] = '+918197437307'
+app.config['ADMIN_PHONE'] = '+91admin phno'
 twilio_client = Client(app.config['TWILIO_ACCOUNT_SID'], app.config['TWILIO_AUTH_TOKEN'])
 
 # --- Database ---
